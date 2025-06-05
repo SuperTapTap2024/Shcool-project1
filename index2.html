@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>חידת הכנסת</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+    .lock {
+      border: 2px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+    }
+    .hidden {
+      display: none;
+    }
+    button {
+      margin-top: 10px;
+    }
+    .color-option {
+      display: inline-block;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+    .selected {
+      outline: 3px solid black;
+    }
+    #color-sequence {
+      margin-top: 10px;
+    }
+    #map {
+      width: 100%;
+      height: 300px;
+      background-color: #eee;
+      text-align: center;
+      line-height: 300px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .keypad button {
+      height: 60px;
+      font-size: 18px;
+    }
+    
+    /* הגדלת כפתורי סיום והתחל מחדש */
+    #doneBtn,
+    #resetBtn {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 10px 5px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>חידת הכנסת</h1>
+
+<div class="lock" id="lock1">
+  <h2>🔒 מנעול ראשון</h2>
+  <p>באיזו שנה נחנך משכן הכנסת הנוכחי?</p>
+  <div id="code-display" dir="ltr" style="text-align: left;font-size: 24px;">____</div>
+  <div class="keypad">
+    <button onclick="enterDigit('1')">1</button>
+    <button onclick="enterDigit('2')">2</button>
+    <button onclick="enterDigit('3')">3</button>
+    <button onclick="enterDigit('4')">4</button>
+    <button onclick="enterDigit('5')">5</button>
+    <button onclick="enterDigit('6')">6</button>
+    <button onclick="enterDigit('7')">7</button>
+    <button onclick="enterDigit('8')">8</button>
+    <button onclick="enterDigit('9')">9</button>
+    <button onclick="clearCode()">⌫</button>
+    <button onclick="enterDigit('0')">0</button>
+    <button onclick="resetCode()">🧹</button>
+  </div>
+</div>
+
+<div class="lock" id="lock2">
+  <h2>🔒 מנעול שני</h2>
+  <p>מהו סדר השמות לפי כהונתם כיו"ר הכנסת?</p>
+  <div id="color-options">
+    <div class="color-option" style="background-color: green;" data-name="ריבלין">ריבלין</div>
+    <div class="color-option" style="background-color: red;" data-name="שמיר">שמיר</div>
+    <div class="color-option" style="background-color: orange;" data-name="אדלשטיין">אדלשטיין</div>
+    <div class="color-option" style="background-color: blue;" data-name="איציק">איציק</div>
+  </div>
+  <div id="color-sequence"></div>
+  <button onclick="resetColorSequence()">אפס בחירה</button>
+</div>
+
+<div class="lock" id="lock3">
+  <h2>🔒 מנעול שלישי</h2>
+  <p>היכן שכנה הכנסת לפני משכנה הנוכחי?</p>
+  <img src="map.png" alt="מפה" height="200" />
+  
+  <!-- New options to choose from -->
+  <div id="location-options" style="margin-top: 10px;">
+    <button onclick="selectLocation('בית פרומין')" style="margin: 5px;">בית פרומין</button>
+    <button onclick="selectLocation('רחוב ניסים בכר')" style="margin: 5px;">רחוב ניסים בכר</button>
+    <button onclick="selectLocation('כיכר ציון')" style="margin: 5px;">כיכר ציון</button>
+    <button onclick="selectLocation('כיכר בוש')" style="margin: 5px;">כיכר בוש</button>
+  </div>
+  
+  <p id="map-answer" style="margin-top: 10px; font-weight: bold;"></p>
+</div>
+
+<div class="lock" id="lock4">
+  <h2>🔒 מנעול סיום</h2>
+  <p>"ראש ממשלה חייב להיות חבר כנסת" – אמת או שקר?</p>
+  <select id="truth-select">
+    <option value="">בחר תשובה</option>
+    <option value="true">אמת</option>
+    <option value="false">שקר</option>
+  </select>
+</div>
+
+<button id="doneBtn" onclick="checkAnswersOnDone()">✅ סיום</button>
+<button id="resetBtn" onclick="location.reload()">🔄 התחל מחדש</button>
+
+<script>
+  const correctYear = "1966";
+  const correctSequence = ["שמיר", "איציק", "ריבלין", "אדלשטיין"];
+  const correctTruth = "true";
+
+  let codeInput = "";
+  let colorAnswer = [];
+  let mapClickedCorrect = false;
+
+  function enterDigit(digit) {
+    if (codeInput.length < 4) {
+      codeInput += digit;
+      updateCodeDisplay();
+      // לא קוראים ל checkAllAnswers() כי לא מבצעים השבתת כפתור
+    }
+  }
+
+  function clearCode() {
+    codeInput = codeInput.slice(0, -1);
+    updateCodeDisplay();
+  }
+
+  function resetCode() {
+    codeInput = "";
+    updateCodeDisplay();
+  }
+
+  function updateCodeDisplay() {
+    let display = codeInput.padEnd(4, "_").split("").join(" ");
+    document.getElementById("code-display").textContent = display;
+  }
+
+  document.querySelectorAll('.color-option').forEach(el => {
+    el.addEventListener('click', () => {
+      if (colorAnswer.length < 4 && !colorAnswer.includes(el.dataset.name)) {
+        colorAnswer.push(el.dataset.name);
+        el.classList.add("selected");
+        updateColorSequence();
+      }
+    });
+  });
+
+  function updateColorSequence() {
+    document.getElementById('color-sequence').innerText = colorAnswer.join(" ← ");
+  }
+
+  function resetColorSequence() {
+    colorAnswer = [];
+    document.getElementById('color-sequence').innerText = "";
+    document.querySelectorAll('.color-option').forEach(el => el.classList.remove("selected"));
+  }
+
+  let mapSelectedLocation = null;
+  const correctLocation = "בית פרומין";
+
+  function selectLocation(location) {
+    mapSelectedLocation = location;
+    const answerElem = document.getElementById('map-answer');
+    answerElem.innerText = `בחרת: ${location}`;
+    mapClickedCorrect = (location === correctLocation);
+  }
+
+  document.getElementById('truth-select').addEventListener('change', () => {
+    // לא עושים כלום כרגע
+  });
+
+  function checkAllAnswers() {
+    const yearCorrect = codeInput === correctYear;
+    const colorCorrect = JSON.stringify(colorAnswer) === JSON.stringify(correctSequence);
+    const mapCorrect = mapClickedCorrect;
+    const truthCorrect = document.getElementById('truth-select').value === correctTruth;
+
+    return yearCorrect && colorCorrect && mapCorrect && truthCorrect;
+  }
+
+  function checkAnswersOnDone() {
+    if (checkAllAnswers()) {
+      alert('כל הכבוד! פתרת את כל החידות!');
+    } else {
+      alert('נסו שנית');
+    }
+  }
+
+  updateCodeDisplay();
+</script>
+
+</body>
+</html>
